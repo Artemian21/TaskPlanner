@@ -1,12 +1,12 @@
-﻿namespace TaskPlanner.Domain.Abstraction
+﻿using System;
+
+namespace TaskPlanner.Domain.Abstraction
 {
-    public interface IUnitOfWork
+    public interface IUnitOfWork : IDisposable
     {
         IProjectRepository ProjectRepository { get; }
         ITaskRepository TaskRepository { get; }
 
-        void Dispose();
-        void Dispose(bool disposing);
         Task SaveAsync();
     }
 }

@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using TaskPlanner.DataAccess.Entities;
 using TaskPlanner.Domain.Abstraction;
 using TaskPlanner.Domain.Models;
+using static TaskPlanner.Domain.Models.Task;
 
 namespace TaskPlanner.DataAccess.Repositories
 {
@@ -47,36 +48,56 @@ namespace TaskPlanner.DataAccess.Repositories
         {
             var projectEntities = await context.Projects.AsNoTracking().ToListAsync();
 
-            var projects = projectEntities.Select(p => Project.Create(p.Id, p.Name, p.Description, p.Deadline).project)
+            var projects = projectEntities
+                .Select(p => Project.Create(
+                    p.Id,
+                    p.Name ?? string.Empty,
+                    p.Description ?? string.Empty,
+                    p.Deadline
+                ).project)
                 .Where(project => project != null)
                 .ToList();
 
             return projects;
         }
 
-        public async Task<Project> GetByIdAsync(Guid id)
+        public async Task<Project?> GetByIdAsync(Guid id)
         {
-            var projectEntity = await context.Projects.Include(p => p.Tasks).AsNoTracking().FirstOrDefaultAsync(p => p.Id == id);
+            var projectEntity = await context.Projects
+                .Include(p => p.Tasks)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(p => p.Id == id);
 
             if (projectEntity == null)
-            {
                 return null;
-            }
 
             var taskModels = projectEntity.Tasks?
-        .Select(t => Domain.Models.Task.Create(
-            t.Id,
-            t.Title,
-            t.Description,
-            t.Deadline,
-            t.Status,
-            t.Priority,
-            t.ProjectId
-        ).task)
-        .Where(t => t != null)
-        .ToList();
+                .Select(t =>
+                {
+                    var request = new TaskCreateRequest
+                    {
+                        Id = t.Id,
+                        Title = t.Title,
+                        Description = t.Description,
+                        Deadline = t.Deadline,
+                        TaskStatus = t.Status,
+                        PriorityStatus = t.Priority,
+                        ProjectId = t.ProjectId,
+                        ProjectDeadline = projectEntity.Deadline
+                    };
 
-            return Project.Create(projectEntity.Id, projectEntity.Name, projectEntity.Description, projectEntity.Deadline, taskModels).project;
+                    return Domain.Models.Task.Create(request).task;
+                })
+                .Where(t => t != null)
+                .ToList();
+
+            return Project.Create(
+                projectEntity.Id,
+                projectEntity.Name,
+                projectEntity.Description,
+                projectEntity.Deadline,
+                taskModels
+            ).project;
         }
 
         public async Task<Project> UpdateAsync(Guid id, string name, string decription, DateTime? deadline)

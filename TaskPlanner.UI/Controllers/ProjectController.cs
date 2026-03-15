@@ -23,6 +23,11 @@ namespace TaskPlanner.UI.Controllers
 
         public async Task<IActionResult> Details(Guid id)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
             var project = await _projectService.GetProjectById(id);
             if (project == null)
             {
@@ -39,6 +44,11 @@ namespace TaskPlanner.UI.Controllers
         [HttpGet]
         public async Task<IActionResult> Edit(Guid id)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
             var project = await _projectService.GetProjectById(id);
             if (project == null)
             {
@@ -49,6 +59,11 @@ namespace TaskPlanner.UI.Controllers
 
         public async Task<IActionResult> Delete(Guid id)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
             var project = await _projectService.GetProjectById(id);
             if (project == null)
             {
@@ -61,6 +76,11 @@ namespace TaskPlanner.UI.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Project project)
         {
+            if (!ModelState.IsValid)
+            {
+                return View(project);
+            }
+
             var (newProject, errors) = Project.Create(project.Id, project.Name, project.Description, project.Deadline, project.Tasks);
 
             if (errors.Any())
@@ -77,6 +97,11 @@ namespace TaskPlanner.UI.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(Guid id)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
             var isDeleted = await _projectService.DeleteProject(id);
             if (!isDeleted)
             {

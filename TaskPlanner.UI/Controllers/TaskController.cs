@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using TaskPlanner.Domain.Abstraction;
+using static TaskPlanner.Domain.Models.Task;
 
 namespace TaskPlanner.UI.Controllers
 {
@@ -27,6 +28,11 @@ namespace TaskPlanner.UI.Controllers
 
         public async Task<IActionResult> Details(Guid id)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
             var task = await _taskService.GetTaskById(id);
             if (task == null)
             {
@@ -39,6 +45,10 @@ namespace TaskPlanner.UI.Controllers
         [HttpGet("Create")]
         public IActionResult Create(Guid projectId)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
             ViewBag.ProjectId = projectId;
             return View();
         }
@@ -48,9 +58,7 @@ namespace TaskPlanner.UI.Controllers
         public async Task<IActionResult> Create(Domain.Models.Task task)
         {
             if (!ModelState.IsValid)
-            {
                 return View(task);
-            }
 
             var project = await _projectService.GetProjectById(task.ProjectId);
             if (project == null)
@@ -59,23 +67,25 @@ namespace TaskPlanner.UI.Controllers
                 return View(task);
             }
 
-            var (newTask, errors) = Domain.Models.Task.Create(
-                Guid.NewGuid(),
-                task.Title,
-                task.Description,
-                task.Deadline,
-                task.Status,
-                task.Priority,
-                task.ProjectId,
-                project.Deadline
-            );
+            var request = new TaskCreateRequest
+            {
+                Id = Guid.NewGuid(),
+                Title = task.Title,
+                Description = task.Description,
+                Deadline = task.Deadline,
+                TaskStatus = task.Status,
+                PriorityStatus = task.Priority,
+                ProjectId = task.ProjectId,
+                ProjectDeadline = project.Deadline
+            };
+
+            var (newTask, errors) = Domain.Models.Task.Create(request);
 
             if (errors.Any())
             {
                 foreach (var error in errors)
-                {
                     ModelState.AddModelError(string.Empty, error);
-                }
+
                 return View(task);
             }
 
@@ -85,6 +95,11 @@ namespace TaskPlanner.UI.Controllers
 
         public async Task<IActionResult> Delete(Guid id)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
             var task = await _taskService.GetTaskById(id);
             if (task == null)
             {
@@ -99,6 +114,11 @@ namespace TaskPlanner.UI.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(Guid id)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
             var task = await _taskService.GetTaskById(id);
             if (task == null)
             {
@@ -116,6 +136,11 @@ namespace TaskPlanner.UI.Controllers
 
         public async Task<IActionResult> Edit(Guid id)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
             var task = await _taskService.GetTaskById(id);
             if (task == null)
             {

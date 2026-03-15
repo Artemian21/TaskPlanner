@@ -9,11 +9,13 @@ using TaskPlanner.Domain.Abstraction;
 
 namespace TaskPlanner.DataAccess
 {
-    public class UnitOfWork : IDisposable, IUnitOfWork
+    public class UnitOfWork : IUnitOfWork
     {
-        private TaskPlannerDBContext context;
-        private IProjectRepository _projectRepository;
-        private ITaskRepository _taskRepository;
+        private readonly TaskPlannerDBContext context;
+        private readonly IProjectRepository _projectRepository;
+        private readonly ITaskRepository _taskRepository;
+
+        private bool disposed = false;
 
         public UnitOfWork(TaskPlannerDBContext context, IProjectRepository projectRepository, ITaskRepository taskRepository)
         {
@@ -43,17 +45,18 @@ namespace TaskPlanner.DataAccess
             await context.SaveChangesAsync();
         }
 
-        private bool disposed = false;
-
-        public virtual void Dispose(bool disposing)
+        protected virtual void Dispose(bool disposing)
         {
-            if (!this.disposed)
+            if (!disposed)
             {
                 if (disposing)
                 {
-                    context.Dispose();
+                    if (context != null)
+                    {
+                        context.Dispose();
+                    }
                 }
-                this.disposed = true;
+                disposed = true;
             }
         }
 
@@ -61,6 +64,11 @@ namespace TaskPlanner.DataAccess
         {
             Dispose(true);
             GC.SuppressFinalize(this);
+        }
+
+        ~UnitOfWork()
+        {
+            Dispose(false);
         }
     }
 }

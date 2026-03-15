@@ -35,26 +35,26 @@ namespace TaskPlanner.Domain.Models
         public PriorityStatus Priority { get; set; } = PriorityStatus.Low;
         public Guid ProjectId { get; set; }
 
-        public static (Task? task, List<string> errors) Create(Guid id, string title, string description, DateTime? deadline, Enums.TaskStatus taskStatus, PriorityStatus priorityStatus, Guid projectId, DateTime? projectDeadline = null)
+        public static (Task? task, List<string> errors) Create(TaskCreateRequest request)
         {
             var errors = new List<string>();
 
-            if (string.IsNullOrWhiteSpace(title))
+            if (string.IsNullOrWhiteSpace(request.Title))
             {
                 errors.Add("Title cannot be empty.");
             }
 
-            if (string.IsNullOrWhiteSpace(description))
+            if (string.IsNullOrWhiteSpace(request.Description))
             {
                 errors.Add("Description cannot be empty.");
             }
 
-            if (deadline.HasValue && deadline.Value < DateTime.UtcNow)
+            if (request.Deadline.HasValue && request.Deadline.Value < DateTime.UtcNow)
             {
                 errors.Add("Deadline cannot be in the past.");
             }
 
-            if (projectDeadline.HasValue && deadline.HasValue && deadline.Value > projectDeadline.Value)
+            if (request.ProjectDeadline.HasValue && request.Deadline.HasValue && request.Deadline.Value > request.ProjectDeadline.Value)
             {
                 errors.Add("Task deadline cannot be later than the project's deadline.");
             }
@@ -64,7 +64,27 @@ namespace TaskPlanner.Domain.Models
                 return (null, errors);
             }
 
-            return (new Task(id, title, description, deadline, taskStatus, priorityStatus, projectId), errors);
+            return (new Task(
+                request.Id,
+                request.Title,
+                request.Description,
+                request.Deadline,
+                request.TaskStatus,
+                request.PriorityStatus,
+                request.ProjectId
+            ), errors);
+        }
+
+        public class TaskCreateRequest
+        {
+            public Guid Id { get; set; }
+            public string Title { get; set; } = "";
+            public string Description { get; set; } = "";
+            public DateTime? Deadline { get; set; }
+            public Enums.TaskStatus TaskStatus { get; set; }
+            public PriorityStatus PriorityStatus { get; set; }
+            public Guid ProjectId { get; set; }
+            public DateTime? ProjectDeadline { get; set; }
         }
     }
 }

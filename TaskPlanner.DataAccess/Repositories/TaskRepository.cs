@@ -7,12 +7,13 @@ using System.Threading.Tasks;
 using TaskPlanner.DataAccess.Entities;
 using TaskPlanner.Domain.Abstraction;
 using TaskPlanner.Domain.Enums;
+using static TaskPlanner.Domain.Models.Task;
 
 namespace TaskPlanner.DataAccess.Repositories
 {
     public class TaskRepository : ITaskRepository
     {
-        private TaskPlannerDBContext context;
+        private readonly TaskPlannerDBContext context;
 
         public TaskRepository(TaskPlannerDBContext context)
         {
@@ -35,8 +36,16 @@ namespace TaskPlanner.DataAccess.Repositories
 
             await context.Tasks.AddAsync(taskEntity);
             await context.SaveChangesAsync();
+            var createdModel = new TaskCreateRequest();
+            createdModel.Id = taskEntity.Id;
+            createdModel.Title = taskEntity.Title;
+            createdModel.Description = taskEntity.Description;
+            createdModel.Deadline = taskEntity.Deadline;
+            createdModel.TaskStatus = taskEntity.Status;
+            createdModel.PriorityStatus = taskEntity.Priority;
+            createdModel.ProjectId = taskEntity.ProjectId;
 
-            return Domain.Models.Task.Create(taskEntity.Id, taskEntity.Title, taskEntity.Description, taskEntity.Deadline, taskEntity.Status, taskEntity.Priority, taskEntity.ProjectId).task;
+            return Domain.Models.Task.Create(createdModel).task;
         }
 
         public async Task<bool> DeleteAsync(Guid id)
@@ -49,26 +58,50 @@ namespace TaskPlanner.DataAccess.Repositories
         {
             var taskEntities = await context.Tasks.AsNoTracking().ToListAsync();
 
-            var tasks = taskEntities.Select(t => Domain.Models.Task.Create(t.Id, t.Title, t.Description, t.Deadline, t.Status, t.Priority, t.ProjectId).task)
+            var tasks = taskEntities
+                .Select(t =>
+                {
+                    var request = new TaskCreateRequest
+                    {
+                        Id = t.Id,
+                        Title = t.Title,
+                        Description = t.Description,
+                        Deadline = t.Deadline,
+                        TaskStatus = t.Status,
+                        PriorityStatus = t.Priority,
+                        ProjectId = t.ProjectId
+                    };
+
+                    return Domain.Models.Task.Create(request).task;
+                })
                 .Where(task => task != null)
                 .ToList();
 
             return tasks;
         }
 
-        public async Task<Domain.Models.Task> GetByIdAsync(Guid id)
+        public async Task<Domain.Models.Task?> GetByIdAsync(Guid id)
         {
             var taskEntity = await context.Tasks.AsNoTracking().FirstOrDefaultAsync(t => t.Id == id);
 
             if (taskEntity == null)
-            {
                 return null;
-            }
 
-            return Domain.Models.Task.Create(taskEntity.Id, taskEntity.Title, taskEntity.Description, taskEntity.Deadline, taskEntity.Status, taskEntity.Priority, taskEntity.ProjectId).task;
+            var request = new TaskCreateRequest
+            {
+                Id = taskEntity.Id,
+                Title = taskEntity.Title,
+                Description = taskEntity.Description,
+                Deadline = taskEntity.Deadline,
+                TaskStatus = taskEntity.Status,
+                PriorityStatus = taskEntity.Priority,
+                ProjectId = taskEntity.ProjectId,
+            };
+
+            return Domain.Models.Task.Create(request).task;
         }
 
-        public async Task<Domain.Models.Task> UpdateAsync(Guid id, string title, string description, DateTime? deadline, Domain.Enums.TaskStatus status, PriorityStatus priority)
+        public async Task<Domain.Models.Task?> UpdateAsync(Guid id, string title, string description, DateTime? deadline, Domain.Enums.TaskStatus status, PriorityStatus priority)
         {
             await context.Tasks.Where(t => t.Id == id)
                 .ExecuteUpdateAsync(s => s
@@ -80,10 +113,20 @@ namespace TaskPlanner.DataAccess.Repositories
 
             var updatedTask = await context.Tasks.AsNoTracking().FirstOrDefaultAsync(t => t.Id == id);
             if (updatedTask == null)
-            {
                 return null;
-            }
-            return Domain.Models.Task.Create(updatedTask.Id, updatedTask.Title, updatedTask.Description, updatedTask.Deadline, updatedTask.Status, updatedTask.Priority, updatedTask.ProjectId).task;
+
+            var request = new TaskCreateRequest
+            {
+                Id = updatedTask.Id,
+                Title = updatedTask.Title,
+                Description = updatedTask.Description,
+                Deadline = updatedTask.Deadline,
+                TaskStatus = updatedTask.Status,
+                PriorityStatus = updatedTask.Priority,
+                ProjectId = updatedTask.ProjectId
+            };
+
+            return Domain.Models.Task.Create(request).task;
         }
     }
 }
